@@ -1,0 +1,30 @@
+---
+services:
+  backend:
+    image: docker.io/cyr-ius/backend:armhf-latest
+    container_name: backend
+    restart: unless-stopped
+    privileged: true
+    volumes:
+      - /media/datas/web projets/viewpicam2/backend/data:/app/data
+      - /media/datas/web projets/viewpicam2/backend/macros:/app/macro
+      - /media/datas/web projets/viewpicam2/backend/h264:/app/h264
+      - /media/datas/web projets/viewpicam2/backend/config:/app/config
+      - /etc/localtime:/etc/localtime:ro
+    env_file: 
+      - /media/datas/web projets/viewpicam2/backend/.env
+  frontend:
+    image: docker.io/cyr-ius/frontend:armhf-latest
+    container_name: frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    volumes:
+      - /media/datas/web projets/viewpicam2/backend/data:/usr/share/nginx/html/data
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - 80:80
+
+# WARNING --> Use command below because Viewpicam is not compatible AMD64
+# DOCKER_DEFAULT_PLATFORM=linux/armhf docker compose up
+# DOCKER_DEFAULT_PLATFORM=linux/armv6 docker compose up
