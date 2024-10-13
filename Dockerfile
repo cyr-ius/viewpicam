@@ -71,8 +71,6 @@ COPY --from=builder /app/userland/build/bin /usr/bin
 COPY --from=builder /app/userland/build/lib /usr/lib
 
 COPY --from=angular-builder /dist/src/app/frontend/dist/frontend/browser /usr/share/nginx/html
-COPY --from=angular-builder /dist/src/app/frontend/docker/site.conf /etc/nginx/conf.d/default.conf
-
 
 COPY --from=python-builder /env /env
 COPY --from=python-builder /app/backend/app /app/app
