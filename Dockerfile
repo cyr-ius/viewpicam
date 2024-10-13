@@ -19,7 +19,7 @@ RUN sed -i 's/sudo//g' buildme
 RUN /bin/bash -c ./buildme
 
 # ------------- Builder python ---------------
-FROM python:3.12-alpine AS python-builder
+FROM python:3.12-alpine3.20 AS python-builder
 
 WORKDIR /app
 
