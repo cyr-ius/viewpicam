@@ -18,7 +18,7 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
   # Description label for the package in Github
-  IMAGE_DESCRIPTION: Backend to control the camera module
+  IMAGE_DESCRIPTION: Viewpcam to control the camera module
 
   # License for the container image
   IMAGE_LICENSE: MIT
@@ -74,7 +74,7 @@ jobs:
       # Build and push Docker image with Buildx (don't push on PR)
       # https://github.com/docker/build-push-action
       - name: Build and push Docker image
-        id: build-and-push-frontend
+        id: build
         uses: docker/build-push-action@v6
         with:
           context: .
