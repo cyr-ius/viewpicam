@@ -35,10 +35,11 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
 # Install dependencies
-RUN apk add --no-cache --virtual build git build-base python3-dev cmake make gcc linux-headers ninja git rust cargo libressl-dev libffi-dev
+RUN apk add --no-cache --virtual build git build-base python3-dev cmake make gcc linux-headers ninja git rust cargo libressl-dev libffi-dev curl grep
 RUN /env/bin/pip3 install --upgrade pip wheel
 
-RUN git clone https://github.com/cyr-ius/viewpicam-backend backend
+RUN VERSION=$(curl --silent "https://api.github.com/repos/cyr-ius/viewpicam-backend/releases/latest"  | grep -Po "(?<=\"tag_name\": \").*(?=\")");export VERSION=${VERSION};git clone --branch=${VERSION} https://github.com/cyr-ius/viewpicam-backend backend
+
 
 WORKDIR /app/backend
 
@@ -49,34 +50,35 @@ FROM --platform=$BUILDPLATFORM  node:current-alpine AS angular-builder
 
 WORKDIR /dist/src/app
 
-RUN apk add --no-cache git
+RUN apk add --no-cache git curl grep
 
 RUN npm install -g @angular/cli
 
-RUN export FRONTEND_VERSION=$(curl --silent "https://api.github.com/repos/cyr-ius/viewpicam-frontend/releases/latest"  | grep -Po "(?<=\"tag_name\": \").*(?=\")");echo "export FRONTEND_VERSION=${FRONTEND_VERSION}" > /envfile
-
-RUN . /envfile;git clone https://github.com/cyr-ius/viewpicam-frontend frontend
+RUN VERSION=$(curl --silent "https://api.github.com/repos/cyr-ius/viewpicam-frontend/releases/latest"  | grep -Po "(?<=\"tag_name\": \").*(?=\")");export VERSION=${VERSION};git clone --branch=${VERSION} https://github.com/cyr-ius/viewpicam-frontend frontend
 
 WORKDIR /dist/src/app/frontend
 RUN npm ci
 RUN npm run build --prod
-RUN ls
 
 # ------------- MAIN ---------------
-FROM nginx:alpine3.20-slim
+FROM python:3.12-alpine
 
 COPY --from=builder /app/gpac-master/bin/gcc/MP4Box /usr/bin
 COPY --from=builder /app/gpac-master/bin/gcc/gpac /usr/bin
 COPY --from=builder /app/userland/build/bin /usr/bin
 COPY --from=builder /app/userland/build/lib /usr/lib
 
-COPY --from=angular-builder /dist/src/app/frontend/dist/frontend/browser /usr/share/nginx/html
-
 COPY --from=python-builder /env /env
 COPY --from=python-builder /app/backend/app /app/app
 COPY --from=python-builder /app/backend/raspimjpeg /etc/raspimjpeg
 COPY --from=python-builder /app/backend/alembic /app/alembic
 COPY --from=python-builder /app/backend/alembic.ini /app/alembic.ini
+
+# install nginx
+RUN apk add --no-cache nginx
+COPY site.conf /etc/nginx/conf.d/default.conf
+COPY nginx.conf /etc/nginx/nginx.conf
+COPY --from=angular-builder /dist/src/app/frontend/dist/frontend/browser /usr/share/nginx/html
 
 WORKDIR /app
 
@@ -86,12 +88,8 @@ LABEL org.opencontainers.image.description="Viewpicam - inspired by Rpi Cam Inte
 LABEL org.opencontainers.image.licenses="MIT"
 LABEL maintaine="cyr-ius"
 
-RUN apk add --no-cache python3 && ln -sf /usr/bin/python3 /usr/local/bin/python3
-
-COPY site.conf /etc/nginx/conf.d/default.conf
-
-COPY run-fastapi.sh /docker-entrypoint.d/05-run-fastapi.sh
-RUN chmod +x /docker-entrypoint.d/05-run-fastapi.sh
+COPY run-fastapi.sh /docker-entrypoint.sh
+RUN chmod 744 -R /docker-entrypoint.sh && chmod +x /docker-entrypoint.sh
 
 VOLUME /app/macros
 VOLUME /app/data
@@ -100,7 +98,11 @@ VOLUME /app/config
 
 ARG VERSION
 ENV VERSION=${VERSION}
-ENV VIRTUAL_ENV=/env
-ENV PATH=/env/bin:$PATH
+ENV VIRTUAL_ENV="/env"
+ENV PATH="/env/bin:$PATH"
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONFAULTHANDLER=1
 
+ENTRYPOINT ["/docker-entrypoint.sh"]
+CMD ["fastapi", "run", "app/main.py", "--port", "8000"]
 EXPOSE 80/tcp

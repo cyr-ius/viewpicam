@@ -1,8 +1,6 @@
 #!/bin/sh
-set -euo pipefail
+# set -euo pipefail
 cd /app
-
-PATH=/env/bin:$PATH
 
 LOG_LEVEL="${LOG_LEVEL:-info}"
 
@@ -12,5 +10,6 @@ if [ ! -f "./config/.secret_key" ]; then
     echo SECRET_KEY=${secret} >> "./config/.secret_key"
 fi
 
+/bin/sh -c "nginx -g 'daemon off;'" &
 /bin/sh -c "alembic upgrade head"
-exec fastapi run app/main.py &
+exec "$@"
