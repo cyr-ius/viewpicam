@@ -34,14 +34,12 @@ ENV PYTHONDONTWRITEBYTECODE=1
 # Turns off buffering for easier container logging
 ENV PYTHONUNBUFFERED=1
 
+# Add binaries and sources
+ADD backend/requirements.txt requirements.txt
+
 # Install dependencies
-RUN apk add --no-cache --virtual build git build-base python3-dev cmake make gcc linux-headers ninja git rust cargo libressl-dev libffi-dev curl grep
+RUN apk add --no-cache --virtual build git build-base python3-dev cmake make gcc linux-headers ninja git rust cargo libressl-dev
 RUN /env/bin/pip3 install --upgrade pip wheel
-
-RUN VERSION=$(curl --silent "https://api.github.com/repos/cyr-ius/viewpicam-backend/releases/latest"  | grep -Po "(?<=\"tag_name\": \").*(?=\")");export VERSION=${VERSION};git clone --branch=${VERSION} https://github.com/cyr-ius/viewpicam-backend backend
-
-WORKDIR /app/backend
-
 RUN /env/bin/pip3 install -v --no-cache-dir -r requirements.txt
 
 # ------------- Builder angular ---------------
@@ -49,14 +47,13 @@ FROM --platform=$BUILDPLATFORM  node:current-alpine AS angular-builder
 
 WORKDIR /dist/src/app
 
-RUN apk add --no-cache git curl grep
-
 RUN npm install -g @angular/cli
 
-RUN VERSION=$(curl --silent "https://api.github.com/repos/cyr-ius/viewpicam-frontend/releases/latest"  | grep -Po "(?<=\"tag_name\": \").*(?=\")");export VERSION=${VERSION};git clone --branch=${VERSION} https://github.com/cyr-ius/viewpicam-frontend frontend
-
-WORKDIR /dist/src/app/frontend
+COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
+
+COPY frontend/ .
+
 RUN npm run build --prod
 
 # ------------- MAIN ---------------
@@ -68,16 +65,16 @@ COPY --from=builder /app/userland/build/bin /usr/bin
 COPY --from=builder /app/userland/build/lib /usr/lib
 
 COPY --from=python-builder /env /env
-COPY --from=python-builder /app/backend/app /app/app
-COPY --from=python-builder /app/backend/raspimjpeg /etc/raspimjpeg
-COPY --from=python-builder /app/backend/alembic /app/alembic
-COPY --from=python-builder /app/backend/alembic.ini /app/alembic.ini
+COPY backend/app /app/app
+COPY backend/raspimjpeg /etc/raspimjpeg
+COPY backend/alembic /app/alembic
+COPY backend/alembic.ini /app/alembic.ini
 
-# install nginx
-RUN apk add --no-cache nginx
+# Install Frontend
+RUN apk add --no-cache nginx supervisor
 COPY site.conf /etc/nginx/conf.d/default.conf
 COPY nginx.conf /etc/nginx/nginx.conf
-COPY --from=angular-builder /dist/src/app/frontend/dist/frontend/browser /usr/share/nginx/html
+COPY --from=angular-builder /dist/src/app/dist/frontend/browser/ /usr/share/nginx/html
 
 WORKDIR /app
 
