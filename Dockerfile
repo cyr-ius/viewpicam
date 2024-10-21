@@ -35,6 +35,8 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
 # Add binaries and sources
+RUN ls .
+RUN ls ..
 ADD ./backend/requirements.txt requirements.txt
 
 # Install dependencies
