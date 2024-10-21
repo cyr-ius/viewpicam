@@ -40,7 +40,6 @@ RUN /env/bin/pip3 install --upgrade pip wheel
 
 RUN VERSION=$(curl --silent "https://api.github.com/repos/cyr-ius/viewpicam-backend/releases/latest"  | grep -Po "(?<=\"tag_name\": \").*(?=\")");export VERSION=${VERSION};git clone --branch=${VERSION} https://github.com/cyr-ius/viewpicam-backend backend
 
-
 WORKDIR /app/backend
 
 RUN /env/bin/pip3 install -v --no-cache-dir -r requirements.txt
