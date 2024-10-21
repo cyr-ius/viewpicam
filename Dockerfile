@@ -67,10 +67,10 @@ COPY --from=builder /app/userland/build/bin /usr/bin
 COPY --from=builder /app/userland/build/lib /usr/lib
 
 COPY --from=python-builder /env /env
-COPY ./backend/app /app/app
-COPY ./backend/raspimjpeg /etc/raspimjpeg
-COPY ./backend/alembic /app/alembic
-COPY ./backend/alembic.ini /app/alembic.ini
+COPY --from=python-builder /app/backend/app /app/app
+COPY --from=python-builder /app/backend/raspimjpeg /etc/raspimjpeg
+COPY --from=python-builder /app/backend/alembic /app/alembic
+COPY --from=python-builder /app/backend/alembic.ini /app/alembic.ini
 
 # Install Frontend
 RUN apk add --no-cache nginx supervisor
