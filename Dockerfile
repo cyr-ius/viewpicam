@@ -35,7 +35,7 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
 # Add binaries and sources
-ADD backend/requirements.txt requirements.txt
+ADD ./backend/requirements.txt requirements.txt
 
 # Install dependencies
 RUN apk add --no-cache --virtual build git build-base python3-dev cmake make gcc linux-headers ninja git rust cargo libressl-dev
@@ -49,7 +49,7 @@ WORKDIR /dist/src/app
 
 RUN npm install -g @angular/cli
 
-COPY frontend/package.json frontend/package-lock.json ./
+COPY ./frontend/package.json ./frontend/package-lock.json ./
 RUN npm ci
 
 COPY frontend/ .
@@ -65,10 +65,10 @@ COPY --from=builder /app/userland/build/bin /usr/bin
 COPY --from=builder /app/userland/build/lib /usr/lib
 
 COPY --from=python-builder /env /env
-COPY backend/app /app/app
-COPY backend/raspimjpeg /etc/raspimjpeg
-COPY backend/alembic /app/alembic
-COPY backend/alembic.ini /app/alembic.ini
+COPY ./backend/app /app/app
+COPY ./backend/raspimjpeg /etc/raspimjpeg
+COPY ./backend/alembic /app/alembic
+COPY ./backend/alembic.ini /app/alembic.ini
 
 # Install Frontend
 RUN apk add --no-cache nginx supervisor
