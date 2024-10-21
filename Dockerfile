@@ -1,4 +1,4 @@
-FROM alpine:3.18 AS builder
+FROM alpine:3.20 AS builder
 
 WORKDIR /app
 
@@ -61,7 +61,7 @@ RUN npm ci
 RUN npm run build --prod
 
 # ------------- MAIN ---------------
-FROM python:3.12-alpine
+FROM python:3.12-alpine3.20
 
 COPY --from=builder /app/gpac-master/bin/gcc/MP4Box /usr/bin
 COPY --from=builder /app/gpac-master/bin/gcc/gpac /usr/bin
@@ -88,7 +88,17 @@ LABEL org.opencontainers.image.description="Viewpicam - inspired by Rpi Cam Inte
 LABEL org.opencontainers.image.licenses="MIT"
 LABEL maintaine="cyr-ius"
 
-COPY run-fastapi.sh /docker-entrypoint.sh
+# Keeps Python from generating .pyc files in the container
+ENV PYTHONDONTWRITEBYTECODE=1
+
+# Turns off buffering for easier container logging
+ENV PYTHONUNBUFFERED=1
+
+# Enable VirtualEnv
+ENV VIRTUAL_ENV="/env"
+ENV PATH="/env/bin:$PATH"
+
+COPY docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod 744 -R /docker-entrypoint.sh && chmod +x /docker-entrypoint.sh
 
 VOLUME /app/macros
@@ -98,10 +108,6 @@ VOLUME /app/config
 
 ARG VERSION
 ENV VERSION=${VERSION}
-ENV VIRTUAL_ENV="/env"
-ENV PATH="/env/bin:$PATH"
-ENV PYTHONUNBUFFERED=1
-ENV PYTHONFAULTHANDLER=1
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
 CMD ["fastapi", "run", "app/main.py", "--port", "8000"]
