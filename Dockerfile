@@ -72,9 +72,9 @@ COPY ./backend/alembic.ini /app/alembic.ini
 
 # Install Frontend
 RUN apk add --no-cache nginx supervisor
-COPY site.conf /etc/nginx/conf.d/default.conf
-COPY nginx.conf /etc/nginx/nginx.conf
+COPY site.conf /etc/nginx/http.d/default.conf
 COPY --from=angular-builder /dist/src/app/dist/frontend/browser/ /usr/share/nginx/html
+RUN ln -s /app/data /usr/share/nginx/html/data
 
 WORKDIR /app
 
@@ -94,9 +94,6 @@ ENV PYTHONUNBUFFERED=1
 ENV VIRTUAL_ENV="/env"
 ENV PATH="/env/bin:$PATH"
 
-COPY docker-entrypoint.sh /docker-entrypoint.sh
-RUN chmod 744 -R /docker-entrypoint.sh && chmod +x /docker-entrypoint.sh
-
 VOLUME /app/macros
 VOLUME /app/data
 VOLUME /app/h264
@@ -105,6 +102,8 @@ VOLUME /app/config
 ARG VERSION
 ENV VERSION=${VERSION}
 
-ENTRYPOINT ["/docker-entrypoint.sh"]
-CMD ["fastapi", "run", "app/main.py", "--port", "8000"]
+# Supervisord
+COPY supervisord.conf /etc/supervisor/supervisord.conf
+CMD ["/usr/bin/supervisord","-c","/etc/supervisor/supervisord.conf"]
+
 EXPOSE 80/tcp
