@@ -38,7 +38,7 @@ ENV PYTHONUNBUFFERED=1
 ADD ./backend/requirements.txt requirements.txt
 
 # Install dependencies
-RUN apk add --no-cache --virtual build git build-base python3-dev cmake make gcc linux-headers ninja git rust cargo libressl-dev
+RUN apk add --no-cache --virtual build git build-base python3-dev cmake make gcc linux-headers ninja git rust cargo libressl-dev libffi-dev
 RUN /env/bin/pip3 install --upgrade pip wheel
 RUN /env/bin/pip3 install -v --no-cache-dir -r requirements.txt
 
